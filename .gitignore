@@ -1,0 +1,64 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+
+
+# =========================
+# Android Studio
+# =========================
+*.iml
+.idea/
+.gradle/
+
+# Local configuration
+local.properties
+
+# Build outputs
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# APK / AAB
+*.apk
+*.aab
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Keystore
+*.jks
+*.keystore
+
+# Kotlin
+.kotlin/
+
+# IntelliJ
+out/
+
+# Generated files
+generated/
+
+# Firebase (jika nanti menggunakan)
+google-services.json
+
+# Secrets
+*.env
+.env
