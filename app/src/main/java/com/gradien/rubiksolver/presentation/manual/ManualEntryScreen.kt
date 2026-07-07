@@ -11,9 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gradien.rubiksolver.domain.model.CubeColor
@@ -21,21 +23,48 @@ import com.gradien.rubiksolver.domain.model.CubeColor
 @Composable
 fun ManualEntryScreen(
     uiState: ManualEntryUiState,
-    onEvent: (ManualEntryEvent) -> Unit
+    onEvent: (ManualEntryEvent) -> Unit,
+    onBack: () -> Unit = {}
 ) {
+    val accentColor = MaterialTheme.colorScheme.primary
+    val bgColor = MaterialTheme.colorScheme.background
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(bgColor)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Manual Color Entry",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(
+                onClick = onBack,
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    width = 1.dp
+                ),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = accentColor
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(text = "← Kembali", fontSize = 13.sp)
+            }
+            Text(
+                text = "Masukkan Warna Rubik",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = accentColor,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.size(80.dp))
+        }
 
-        // Cube Layout (2D Net) with Horizontal Scroll to prevent cutting off
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -51,56 +80,137 @@ fun ManualEntryScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Solution or Error Message
         if (uiState.errorMessage != null) {
-            Text(
-                text = uiState.errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(8.dp)
-            )
-        } else if (uiState.solution != null) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Solution:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(text = uiState.solution, fontSize = 16.sp)
+                Text(
+                    text = "⚠ ${uiState.errorMessage}",
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    fontSize = 13.sp
+                )
+            }
+        } else if (uiState.isSolved) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .border(1.dp, accentColor, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Text(
+                    text = "✅ Rubik sudah tersolved!",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor,
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else if (uiState.steps.isNotEmpty()) {
+            val step = uiState.steps[uiState.currentStepIndex]
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .border(1.dp, accentColor, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "LANGKAH ${step.stepNumber} DARI ${step.totalSteps}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        color = accentColor.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = step.notation,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accentColor
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HorizontalDivider(
+                        color = accentColor.copy(alpha = 0.3f),
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Text(
+                        text = step.description,
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                OutlinedButton(
+                    onClick = { onEvent(ManualEntryEvent.PreviousStep) },
+                    enabled = uiState.currentStepIndex > 0,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp)
+                ) {
+                    Text("← Sebelumnya")
+                }
+                Button(
+                    onClick = { onEvent(ManualEntryEvent.NextStep) },
+                    enabled = uiState.currentStepIndex < uiState.steps.size - 1,
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = bgColor)
+                ) {
+                    Text("Selanjutnya →")
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Color Palette
         ColorPalette(
             selectedColor = uiState.selectedColor,
             onColorSelect = { onEvent(ManualEntryEvent.ColorSelected(it)) }
         )
 
-        // Action Buttons
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(
+            OutlinedButton(
                 onClick = { onEvent(ManualEntryEvent.ResetClicked) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp)
             ) {
                 Text("Reset")
             }
             Button(
                 onClick = { onEvent(ManualEntryEvent.SolveClicked) },
-                enabled = !uiState.isLoading
+                enabled = !uiState.isLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = bgColor)
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = Color.White
+                        color = bgColor
                     )
                 } else {
-                    Text("Solve")
+                    Text("Solve", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -112,28 +222,24 @@ fun CubeNetLayout(
     facelets: List<CubeColor>,
     onStickerClick: (Int) -> Unit
 ) {
-    // Standard layout: 
-    //    U
-    //  L F R B
-    //    D
-    
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Face U (Up)
-        FaceGrid(facelets.subList(0, 9), 0, "U", onStickerClick)
-        
+    val stickerSize = 36.dp
+    val faceWidth = stickerSize * 3 + 4.dp
+
+    Column(horizontalAlignment = Alignment.Start) {
         Row {
-            // Face L (Left)
+            Spacer(modifier = Modifier.width(faceWidth))
+            FaceGrid(facelets.subList(0, 9), 0, "U", onStickerClick)
+        }
+        Row {
             FaceGrid(facelets.subList(36, 45), 36, "L", onStickerClick)
-            // Face F (Front)
             FaceGrid(facelets.subList(18, 27), 18, "F", onStickerClick)
-            // Face R (Right)
             FaceGrid(facelets.subList(9, 18), 9, "R", onStickerClick)
-            // Face B (Back)
             FaceGrid(facelets.subList(45, 54), 45, "B", onStickerClick)
         }
-        
-        // Face D (Down)
-        FaceGrid(facelets.subList(27, 36), 27, "D", onStickerClick)
+        Row {
+            Spacer(modifier = Modifier.width(faceWidth))
+            FaceGrid(facelets.subList(27, 36), 27, "D", onStickerClick)
+        }
     }
 }
 
@@ -147,7 +253,7 @@ fun FaceGrid(
     Column(
         modifier = Modifier
             .padding(2.dp)
-            .border(1.dp, Color.Black)
+            .border(1.dp, Color(0xFF444444))
     ) {
         for (row in 0 until 3) {
             Row {
@@ -155,7 +261,7 @@ fun FaceGrid(
                     val index = row * 3 + col
                     val isCenter = index == 4
                     StickerBox(
-                        color = stickers[index], 
+                        color = stickers[index],
                         label = if (isCenter) label else "",
                         onClick = { onStickerClick(offset + index) }
                     )
@@ -169,20 +275,20 @@ fun FaceGrid(
 fun StickerBox(color: CubeColor, label: String, onClick: () -> Unit) {
     val composeColor = color.toComposeColor()
     val contentColor = if (composeColor.luminance() > 0.5f) Color.Black else Color.White
-    
+
     Box(
         modifier = Modifier
-            .size(32.dp) // Adjusted size
+            .size(36.dp)
             .padding(1.dp)
-            .background(composeColor)
-            .border(0.5.dp, Color.Gray)
+            .background(composeColor, RoundedCornerShape(4.dp))
+            .border(0.5.dp, Color(0xFF333333), RoundedCornerShape(4.dp))
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         if (label.isNotEmpty()) {
             Text(
                 text = label,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = contentColor
             )
@@ -200,15 +306,16 @@ fun ColorPalette(
         horizontalArrangement = Arrangement.Center
     ) {
         CubeColor.entries.forEach { color ->
+            val isSelected = selectedColor == color
             Box(
                 modifier = Modifier
-                    .size(45.dp)
+                    .size(48.dp)
                     .padding(4.dp)
-                    .background(color.toComposeColor(), RoundedCornerShape(4.dp))
+                    .background(color.toComposeColor(), RoundedCornerShape(8.dp))
                     .border(
-                        width = if (selectedColor == color) 3.dp else 1.dp,
-                        color = if (selectedColor == color) Color.Black else Color.Transparent,
-                        shape = RoundedCornerShape(4.dp)
+                        width = if (isSelected) 2.dp else 0.dp,
+                        color = if (isSelected) Color.White else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
                     )
                     .clickable { onColorSelect(color) }
             )
@@ -219,11 +326,11 @@ fun ColorPalette(
 fun CubeColor.toComposeColor(): Color {
     return when (this) {
         CubeColor.WHITE -> Color.White
-        CubeColor.RED -> Color.Red
-        CubeColor.GREEN -> Color.Green
-        CubeColor.YELLOW -> Color.Yellow
-        CubeColor.ORANGE -> Color(0xFFFFA500)
-        CubeColor.BLUE -> Color.Blue
+        CubeColor.RED -> Color(0xFFFF3D3D)
+        CubeColor.GREEN -> Color(0xFF00C853)
+        CubeColor.YELLOW -> Color(0xFFFFD600)
+        CubeColor.ORANGE -> Color(0xFFFF6D00)
+        CubeColor.BLUE -> Color(0xFF2979FF)
     }
 }
 
@@ -233,7 +340,12 @@ fun ManualEntryPreview() {
     com.gradien.rubiksolver.ui.theme.RubikSolverTheme {
         ManualEntryScreen(
             uiState = ManualEntryUiState(
-                solution = "U R2 F L B' D2"
+                steps = listOf(
+                    SolutionStep(1, 5, "R", "Putar sisi Kanan searah jarum jam"),
+                    SolutionStep(2, 5, "U2", "Putar sisi Atas dua kali"),
+                    SolutionStep(3, 5, "F'", "Putar sisi Depan berlawanan jarum jam"),
+                ),
+                currentStepIndex = 0
             ),
             onEvent = {}
         )

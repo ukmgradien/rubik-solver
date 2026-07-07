@@ -32,7 +32,9 @@ class HomeViewModel : ViewModel() {
                 println("History Button Clicked")
             }
             HomeEvent.SettingsClicked -> {
-                println("Settings Button Clicked")
+                viewModelScope.launch {
+                    _navigationEvent.emit(HomeNavigationEvent.NavigateToSettings)
+                }
             }
         }
     }

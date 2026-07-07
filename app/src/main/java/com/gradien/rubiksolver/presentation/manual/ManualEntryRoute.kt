@@ -6,12 +6,14 @@ import androidx.compose.runtime.getValue
 
 @Composable
 fun ManualEntryRoute(
-    viewModel: ManualEntryViewModel
+    viewModel: ManualEntryViewModel,
+    onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     ManualEntryScreen(
         uiState = uiState,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        onBack = onBack
     )
 }

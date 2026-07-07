@@ -2,10 +2,8 @@ package com.gradien.rubiksolver.presentation.manual
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gradien.rubiksolver.domain.model.CubeColor
 import com.gradien.rubiksolver.domain.parser.CubeParser
 import com.gradien.rubiksolver.domain.usecase.SolveCubeUseCase
-import com.gradien.rubiksolver.domain.notation.NotationParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,17 +19,27 @@ class ManualEntryViewModel(
 
     fun onEvent(event: ManualEntryEvent) {
         when (event) {
-            is ManualEntryEvent.StickerClicked -> {
-                updateSticker(event.index)
-            }
+            is ManualEntryEvent.StickerClicked -> updateSticker(event.index)
             is ManualEntryEvent.ColorSelected -> {
                 _uiState.update { it.copy(selectedColor = event.color) }
             }
-            ManualEntryEvent.SolveClicked -> {
-                solve()
-            }
+            ManualEntryEvent.SolveClicked -> solve()
             ManualEntryEvent.ResetClicked -> {
                 _uiState.update { ManualEntryUiState() }
+            }
+            ManualEntryEvent.NextStep -> {
+                _uiState.update {
+                    if (it.currentStepIndex < it.steps.size - 1)
+                        it.copy(currentStepIndex = it.currentStepIndex + 1)
+                    else it
+                }
+            }
+            ManualEntryEvent.PreviousStep -> {
+                _uiState.update {
+                    if (it.currentStepIndex > 0)
+                        it.copy(currentStepIndex = it.currentStepIndex - 1)
+                    else it
+                }
             }
         }
     }
@@ -40,7 +48,13 @@ class ManualEntryViewModel(
         _uiState.update { currentState ->
             val newList = currentState.facelets.toMutableList()
             newList[index] = currentState.selectedColor
-            currentState.copy(facelets = newList, solution = null, errorMessage = null)
+            currentState.copy(
+                facelets = newList,
+                steps = emptyList(),
+                currentStepIndex = 0,
+                errorMessage = null,
+                isSolved = false
+            )
         }
     }
 
@@ -51,17 +65,40 @@ class ManualEntryViewModel(
                 val faceletString = _uiState.value.facelets.joinToString("") { it.char.toString() }
                 val cube = CubeParser.fromString(faceletString)
                 val moves = solveCubeUseCase.execute(cube)
-                val solutionString = NotationParser.toString(moves)
-                
-                _uiState.update { it.copy(
-                    solution = if (solutionString.isEmpty()) "Cube is already solved!" else solutionString,
-                    isLoading = false
-                )}
+
+                if (moves.isEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            isSolved = true,
+                            steps = emptyList(),
+                            isLoading = false
+                        )
+                    }
+                } else {
+                    val steps = moves.mapIndexed { index, move ->
+                        SolutionStep(
+                            stepNumber = index + 1,
+                            totalSteps = moves.size,
+                            notation = move.notation,
+                            description = move.toDescription()
+                        )
+                    }
+                    _uiState.update {
+                        it.copy(
+                            steps = steps,
+                            currentStepIndex = 0,
+                            isSolved = false,
+                            isLoading = false
+                        )
+                    }
+                }
             } catch (e: Exception) {
-                _uiState.update { it.copy(
-                    errorMessage = e.message ?: "Unknown Error",
-                    isLoading = false
-                )}
+                _uiState.update {
+                    it.copy(
+                        errorMessage = e.message ?: "Unknown Error",
+                        isLoading = false
+                    )
+                }
             }
         }
     }

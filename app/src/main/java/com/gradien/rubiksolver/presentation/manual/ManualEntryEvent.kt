@@ -7,4 +7,6 @@ sealed class ManualEntryEvent {
     data class ColorSelected(val color: CubeColor) : ManualEntryEvent()
     object SolveClicked : ManualEntryEvent()
     object ResetClicked : ManualEntryEvent()
+    object NextStep : ManualEntryEvent()
+    object PreviousStep : ManualEntryEvent()
 }
